@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Resume Entry</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📝 Manual Resume Entry</h1>
+            <a href="index.html" class="back-link">← Back to Home</a>
+        </header>
+
+        <main>
+            <form id="resumeForm" class="resume-form">
+                <div class="form-section">
+                    <h2>Personal Information</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="fullName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="text" id="phone">
+                        </div>
+                        <div class="form-group">
+                            <label>Location</label>
+                            <input type="text" id="location">
+                        </div>
+                        <div class="form-group">
+                            <label>LinkedIn URL</label>
+                            <input type="text" id="linkedin">
+                        </div>
+                        <div class="form-group">
+                            <label>GitHub URL</label>
+                            <input type="text" id="github">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Professional Summary</h2>
+                    <div class="form-group full-width">
+                        <textarea id="summary" rows="4"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Skills (Comma separated)</h2>
+                    <div class="form-group full-width">
+                        <input type="text" id="skills" placeholder="Python, Java, Communication, Leadership">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Experience</h2>
+                    <div id="experienceContainer"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addExperience()">+ Add Job</button>
+                </div>
+
+                <div class="form-section">
+                    <h2>Education</h2>
+                    <div id="educationContainer"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addEducation()">+ Add Education</button>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large">Analyze & Preview</button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // Dynamic Field Logic
+        function addExperience() {
+            const container = document.getElementById('experienceContainer');
+            const div = document.createElement('div');
+            div.className = 'dynamic-entry';
+            div.innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group"><label>Job Title</label><input type="text" class="exp-title"></div>
+                    <div class="form-group"><label>Company</label><input type="text" class="exp-company"></div>
+                    <div class="form-group"><label>Duration</label><input type="text" class="exp-duration" placeholder="e.g. Jan 2020 - Present"></div>
+                </div>
+                <div class="form-group full-width">
+                    <label>Description (Bullet points)</label>
+                    <textarea class="exp-desc" rows="3" placeholder="• Achieved X by doing Y..."></textarea>
+                </div>
+                <button type="button" class="btn btn-remove" onclick="this.parentElement.remove()">Remove</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addEducation() {
+            const container = document.getElementById('educationContainer');
+            const div = document.createElement('div');
+            div.className = 'dynamic-entry';
+            div.innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group"><label>Degree</label><input type="text" class="edu-degree"></div>
+                    <div class="form-group"><label>Institution</label><input type="text" class="edu-school"></div>
+                    <div class="form-group"><label>Year</label><input type="text" class="edu-year"></div>
+                    <div class="form-group"><label>GPA</label><input type="text" class="edu-gpa"></div>
+                </div>
+                <button type="button" class="btn btn-remove" onclick="this.parentElement.remove()">Remove</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // Form Submission
+        document.getElementById('resumeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Gather Data
+            const data = {
+                personal_info: {
+                    name: document.getElementById('fullName').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    location: document.getElementById('location').value,
+                    linkedin: document.getElementById('linkedin').value,
+                    github: document.getElementById('github').value
+                },
+                summary: document.getElementById('summary').value,
+                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s),
+                experience: [],
+                education: []
+            };
+
+            // Gather Experience
+            document.querySelectorAll('#experienceContainer .dynamic-entry').forEach(entry => {
+                data.experience.push({
+                    title: entry.querySelector('.exp-title').value,
+                    company: entry.querySelector('.exp-company').value,
+                    duration: entry.querySelector('.exp-duration').value,
+                    description: entry.querySelector('.exp-desc').value.split('\n').filter(line => line.trim().length > 0)
+                });
+            });
+
+            // Gather Education
+            document.querySelectorAll('#educationContainer .dynamic-entry').forEach(entry => {
+                data.education.push({
+                    degree: entry.querySelector('.edu-degree').value,
+                    institution: entry.querySelector('.edu-school').value,
+                    year: entry.querySelector('.edu-year').value,
+                    gpa: entry.querySelector('.edu-gpa').value
+                });
+            });
+
+            // Send to API
+            const result = await manualEntryAPI(data);
+            if (result.success) {
+                sessionStorage.setItem('resumeData', JSON.stringify(result.data));
+                sessionStorage.setItem('atsScore', JSON.stringify(result.ats_score));
+                window.location.href = 'preview.html';
+            } else {
+                alert('Error: ' + result.error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Preview & Download</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Resume Preview & Enhancement</h1>
+            <p class="subtitle">Review your ATS score and enhance your resume with AI</p>
+            <a href="index.html" class="back-link">← Start Over</a>
+        </header>
+
+        <main>
+            <!-- ATS Score Display -->
+            <section class="score-section">
+                <div class="score-card">
+                    <h2>Current ATS Score</h2>
+                    <div class="score-display">
+                        <div class="score-circle">
+                            <span id="currentScore" class="score-number">--</span>
+                            <span class="score-grade" id="currentGrade">-</span>
+                        </div>
+                    </div>
+                    <div id="scoreBreakdown" class="score-breakdown"></div>
+                </div>
+
+                <div class="score-card" id="enhancedScoreCard" style="display: none;">
+                    <h2>Enhanced ATS Score</h2>
+                    <div class="score-display">
+                        <div class="score-circle enhanced">
+                            <span id="enhancedScore" class="score-number">--</span>
+                            <span class="score-grade" id="enhancedGrade">-</span>
+                        </div>
+                        <div class="improvement-badge" id="improvementBadge"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Feedback Section -->
+            <section class="feedback-section">
+                <h2>Improvement Suggestions</h2>
+                <div id="feedbackList" class="feedback-list"></div>
+            </section>
+
+            <!-- Enhancement Options -->
+            <section class="enhancement-section">
+                <h2>🤖 AI Enhancement</h2>
+                <p>Let AI optimize your resume content for better ATS compatibility and professional impact</p>
+                
+                <div class="form-group">
+                    <label for="jobDescEnhance">Target Job Description (Optional)</label>
+                    <textarea id="jobDescEnhance" rows="4" 
+                        placeholder="Paste job description to tailor your resume..."></textarea>
+                </div>
+
+                <button id="enhanceBtn" class="btn btn-primary btn-large" onclick="enhanceResume()">
+                    ✨ Enhance with AI
+                </button>
+
+                <div id="enhanceStatus" class="status-message" style="display: none;">
+                    <div class="loader"></div>
+                    <p id="enhanceStatusText">AI is enhancing your resume...</p>
+                </div>
+            </section>
+
+            <!-- Template Selection -->
+            <section class="template-section" id="templateSection" style="display: none;">
+                <h2>Choose Resume Template</h2>
+                <div class="template-grid" id="templateGrid">
+                    <!-- Templates will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Generate Resume -->
+            <section class="generate-section" id="generateSection" style="display: none;">
+                <button id="generateBtn" class="btn btn-success btn-large" onclick="generateResume()">
+                    📥 Generate Resume (PDF & DOCX)
+                </button>
+
+                <div id="generateStatus" class="status-message" style="display: none;">
+                    <div class="loader"></div>
+                    <p id="generateStatusText">Generating your resume...</p>
+                </div>
+            </section>
+
+            <!-- Download Section -->
+            <section class="download-section" id="downloadSection" style="display: none;">
+                <h2>✅ Your Resume is Ready!</h2>
+                <div class="download-buttons">
+                    <a id="downloadPdf" class="btn btn-primary" download>
+                        📄 Download PDF
+                    </a>
+                    <a id="downloadDocx" class="btn btn-secondary" download>
+                        📝 Download DOCX
+                    </a>
+                </div>
+                <p class="success-message">Your ATS-optimized resume has been generated successfully!</p>
+            </section>
+
+            <!-- Comparison View -->
+            <section class="comparison-section" id="comparisonSection" style="display: none;">
+                <h2>Before & After Comparison</h2>
+                <div class="comparison-grid">
+                    <div class="comparison-column">
+                        <h3>Original</h3>
+                        <div id="originalContent" class="content-preview"></div>
+                    </div>
+                    <div class="comparison-column">
+                        <h3>AI Enhanced</h3>
+                        <div id="enhancedContent" class="content-preview"></div>
+                    </div>
+                </div>
+            </section>
+
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </main>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        let currentResumeData = null;
+        let enhancedResumeData = null;
+        let currentAtsScore = null;
+        let enhancedAtsScore = null;
+        let selectedTemplate = 'modern';
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadResumeData();
+            loadTemplates();
+        });
+
+        function loadResumeData() {
+            const resumeDataStr = sessionStorage.getItem('resumeData');
+            const atsScoreStr = sessionStorage.getItem('atsScore');
+
+            if (!resumeDataStr || !atsScoreStr) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            currentResumeData = JSON.parse(resumeDataStr);
+            currentAtsScore = JSON.parse(atsScoreStr);
+
+            displayAtsScore(currentAtsScore, 'current');
+            displayFeedback(currentAtsScore.feedback);
+        }
+
+        function displayAtsScore(scoreData, type) {
+            const prefix = type === 'current' ? 'current' : 'enhanced';
+            
+            document.getElementById(`${prefix}Score`).textContent = scoreData.total_score;
+            document.getElementById(`${prefix}Grade`).textContent = scoreData.grade;
+
+            // Color code based on score
+            const scoreCircle = document.querySelector(`#${prefix}Score`).parentElement;
+            scoreCircle.className = 'score-circle';
+            
+            if (scoreData.total_score >= 80) {
+                scoreCircle.classList.add('score-excellent');
+            } else if (scoreData.total_score >= 60) {
+                scoreCircle.classList.add('score-good');
+            } else {
+                scoreCircle.classList.add('score-poor');
+            }
+
+            // Display category breakdown for current score
+            if (type === 'current') {
+                const breakdown = document.getElementById('scoreBreakdown');
+                breakdown.innerHTML = '<h4>Score Breakdown:</h4>';
+                
+                const categories = scoreData.category_scores;
+                for (const [category, score] of Object.entries(categories)) {
+                    const categoryName = category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const bar = `
+                        <div class="score-item">
+                            <span class="category-name">${categoryName}</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${score}%"></div>
+                            </div>
+                            <span class="category-score">${Math.round(score)}</span>
+                        </div>
+                    `;
+                    breakdown.innerHTML += bar;
+                }
+            }
+
+            // Show improvement if enhanced
+            if (type === 'enhanced' && currentAtsScore) {
+                const improvement = scoreData.total_score - currentAtsScore.total_score;
+                const improvementBadge = document.getElementById('improvementBadge');
+                if (improvement > 0) {
+                    improvementBadge.textContent = `+${improvement.toFixed(1)} points`;
+                    improvementBadge.className = 'improvement-badge positive';
+                } else {
+                    improvementBadge.textContent = `${improvement.toFixed(1)} points`;
+                    improvementBadge.className = 'improvement-badge';
+                }
+                
+                document.getElementById('enhancedScoreCard').style.display = 'block';
+            }
+        }
+
+        function displayFeedback(feedbackList) {
+            const container = document.getElementById('feedbackList');
+            container.innerHTML = '';
+
+            if (!feedbackList || feedbackList.length === 0) {
+                container.innerHTML = '<p>No feedback available</p>';
+                return;
+            }
+
+            feedbackList.forEach(item => {
+                const severityClass = `feedback-${item.severity}`;
+                const feedbackItem = document.createElement('div');
+                feedbackItem.className = `feedback-item ${severityClass}`;
+                feedbackItem.innerHTML = `
+                    <div class="feedback-header">
+                        <span class="feedback-category">${item.category}</span>
+                        <span class="feedback-severity">${item.severity}</span>
+                    </div>
+                    <p class="feedback-message">${item.message}</p>
+                `;
+                container.appendChild(feedbackItem);
+            });
+        }
+
+        async function enhanceResume() {
+            const jobDescription = document.getElementById('jobDescEnhance').value;
+            
+            document.getElementById('enhanceStatusText').textContent = 'AI is analyzing and enhancing your resume...';
+            document.getElementById('enhanceStatus').style.display = 'block';
+            document.getElementById('enhanceBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/enhance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        resume_data: currentResumeData,
+                        job_description: jobDescription
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    enhancedResumeData = result.enhanced_data;
+                    enhancedAtsScore = result.ats_score;
+
+                    // Update display
+                    displayAtsScore(enhancedAtsScore, 'enhanced');
+                    
+                    // Show template section
+                    document.getElementById('templateSection').style.display = 'block';
+                    document.getElementById('generateSection').style.display = 'block';
+
+                    // Show comparison
+                    showComparison();
+
+                    alert('✨ Resume enhanced successfully! Your ATS score improved by ' + 
+                          (enhancedAtsScore.total_score - currentAtsScore.total_score).toFixed(1) + ' points!');
+                } else {
+                    showError(result.error || 'Enhancement failed');
+                }
+            } catch (error) {
+                showError('Error enhancing resume: ' + error.message);
+            } finally {
+                document.getElementById('enhanceStatus').style.display = 'none';
+                document.getElementById('enhanceBtn').disabled = false;
+            }
+        }
+
+        async function loadTemplates() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/templates`);
+                const result = await response.json();
+
+                const grid = document.getElementById('templateGrid');
+                result.templates.forEach(template => {
+                    const card = document.createElement('div');
+                    card.className = 'template-card';
+                    if (template.id === selectedTemplate) {
+                        card.classList.add('selected');
+                    }
+                    card.innerHTML = `
+                        <h4>${template.name}</h4>
+                        <p>${template.description}</p>
+                        <button class="btn btn-secondary" onclick="selectTemplate('${template.id}', this)">
+                            Select
+                        </button>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        function selectTemplate(templateId, button) {
+            selectedTemplate = templateId;
+            
+            // Update UI
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            button.parentElement.classList.add('selected');
+        }
+
+        async function generateResume() {
+            const dataToUse = enhancedResumeData || currentResumeData;
+
+            document.getElementById('generateStatusText').textContent = 'Generating your professional resume...';
+            document.getElementById('generateStatus').style.display = 'block';
+            document.getElementById('generateBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        resume_data: dataToUse,
+                        template: selectedTemplate
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Set download links
+                    document.getElementById('downloadPdf').href = 
+                        `${API_BASE_URL}/api/download/${result.files.pdf}`;
+                    document.getElementById('downloadDocx').href = 
+                        `${API_BASE_URL}/api/download/${result.files.docx}`;
+
+                    // Show download section
+                    document.getElementById('downloadSection').style.display = 'block';
+                    
+                    // Scroll to download section
+                    document.getElementById('downloadSection').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    showError(result.error || 'Generation failed');
+                }
+            } catch (error) {
+                showError('Error generating resume: ' + error.message);
+            } finally {
+                document.getElementById('generateStatus').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        function showComparison() {
+            if (!enhancedResumeData) return;
+
+            document.getElementById('comparisonSection').style.display = 'block';
+
+            // Show experience comparison
+            const originalExp = currentResumeData.experience || [];
+            const enhancedExp = enhancedResumeData.experience || [];
+
+            let originalHtml = '<h4>Experience:</h4>';
+            originalExp.forEach(exp => {
+                originalHtml += `<div class="exp-item">
+                    <strong>${exp.title}</strong><br>
+                    ${Array.isArray(exp.description) ? exp.description.join('<br>• ') : exp.description}
+                </div>`;
+            });
+
+            let enhancedHtml = '<h4>Experience:</h4>';
+            enhancedExp.forEach(exp => {
+                enhancedHtml += `<div class="exp-item enhanced">
+                    <strong>${exp.title}</strong><br>
+                    ${Array.isArray(exp.description) ? exp.description.join('<br>• ') : exp.description}
+                </div>`;
+            });
+
+            document.getElementById('originalContent').innerHTML = originalHtml;
+            document.getElementById('enhancedContent').innerHTML = enhancedHtml;
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('errorMessage').style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

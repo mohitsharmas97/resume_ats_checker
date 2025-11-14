@@ -1,0 +1,8 @@
+flask
+flask-cors
+werkzeug
+python-docx
+pypdf2
+reportlab
+python-dotenv
+google-generativeai

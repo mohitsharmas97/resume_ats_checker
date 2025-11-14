@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Builder - ATS Optimized</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 AI-Powered Resume Builder</h1>
+            <p class="subtitle">Create ATS-Optimized Resumes with AI Enhancement</p>
+        </header>
+
+        <main>
+            <div class="hero-section">
+                <div class="feature-cards">
+                    <div class="feature-card">
+                        <span class="icon">📄</span>
+                        <h3>Upload or Create</h3>
+                        <p>Upload existing resume or enter details manually</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="icon">🤖</span>
+                        <h3>AI Enhancement</h3>
+                        <p>Powered by OpenAI & Gemini for optimal content</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="icon">📊</span>
+                        <h3>ATS Scoring</h3>
+                        <p>Real-time scoring with improvement suggestions</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="icon">📥</span>
+                        <h3>Professional Output</h3>
+                        <p>Download in PDF and DOCX formats</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <h2>Get Started</h2>
+                <p>Choose how you want to create your resume:</p>
+
+                <div class="action-buttons">
+                    <div class="action-option">
+                        <div class="upload-section">
+                            <h3>Upload Existing Resume</h3>
+                            <div class="upload-box" id="uploadBox">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <p>Drag and drop your resume here</p>
+                                <p class="file-types">Supports PDF and DOCX files</p>
+                                <input type="file" id="fileInput" accept=".pdf,.docx,.doc" hidden>
+                                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                    Choose File
+                                </button>
+                            </div>
+                            <div id="fileInfo" class="file-info" style="display: none;">
+                                <p>Selected: <span id="fileName"></span></p>
+                                <button class="btn btn-secondary" onclick="uploadResume()">Process Resume</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider">OR</div>
+
+                    <div class="action-option">
+                        <div class="manual-entry">
+                            <h3>Create from Scratch</h3>
+                            <p>Enter your information manually and let AI create your resume</p>
+                            <a href="form.html" class="btn btn-outline">Start Manual Entry</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="processingStatus" class="status-message" style="display: none;">
+                <div class="loader"></div>
+                <p id="statusText">Processing your resume...</p>
+            </div>
+
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </main>
+
+        <footer>
+            <p>Powered by OpenAI, Gemini & Advanced ATS Technology</p>
+        </footer>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // File upload handling
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+
+        // Drag and drop
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('drag-over');
+        });
+
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('drag-over');
+        });
+
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                fileName.textContent = file.name;
+                fileInfo.style.display = 'block';
+                uploadBox.style.display = 'none';
+            }
+        }
+
+        async function uploadResume() {
+            const file = fileInput.files[0];
+            if (!file) {
+                showError('Please select a file first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showStatus('Uploading and parsing your resume...');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Store data and redirect to preview
+                    sessionStorage.setItem('resumeData', JSON.stringify(result.data));
+                    sessionStorage.setItem('atsScore', JSON.stringify(result.ats_score));
+                    window.location.href = 'preview.html';
+                } else {
+                    showError(result.error || 'Failed to process resume');
+                }
+            } catch (error) {
+                showError('Error uploading resume: ' + error.message);
+            } finally {
+                hideStatus();
+            }
+        }
+
+        function showStatus(message) {
+            document.getElementById('statusText').textContent = message;
+            document.getElementById('processingStatus').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function hideStatus() {
+            document.getElementById('processingStatus').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            hideStatus();
+        }
+    </script>
+</body>
+</html>
